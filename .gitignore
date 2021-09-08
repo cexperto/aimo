@@ -1,0 +1,5 @@
+venv/
+__pycahe__
+/__pycache__/
+my_bootle.py
+notes.db
