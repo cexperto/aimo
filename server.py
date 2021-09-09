@@ -1,29 +1,52 @@
-from model import Users, init
+from model import Users, init, Notes
 from hashlib import sha1
 from serializer import UserSchema, User, NotesSchema
-from bottle import debug, run, get, post, request, delete
-from marshmallow import ValidationError
+from bottle import debug, run, get, post, request, delete,route
+from marshmallow import ValidationError, exceptions
 import json, jwt, typing
 from werkzeug.security import generate_password_hash, check_password_hash
 
 init()
-
+secret ='secret_aimo'
     
-def encript(payload: dict):
-    encoded = jwt.encode(payload, "secret_aimo", algorithm="HS256")
-    return encoded
+def encode_token(payload: dict):
+    token_bytes = jwt.encode(payload, secret, algorithm='HS256')
+    return token_bytes
+
+
+def decode_token(encoded_token):
+    try:
+        response = jwt.decode(encoded_token, secret, algorithms=['HS256'])
+        return response
+    except jwt.exceptions.DecodeError:
+        return "Token no valido"
+
 
 
 def insert_user(user_email, user_password):
+    my_dict = {
+        "email": user_email
+    }
     try:
         key = generate_password_hash(user_password, 'sha256')
         print(f'key : {str(key)}')
-        new_user = Users.insert(email=user_email,password=key,token=str(encript({"email":user_email}))).execute()
-        print(new_user)
+        my_token= encode_token(my_dict)
+
+        new_user = Users.insert(email=user_email,password=key,token=my_token).execute()
+
+        print(f'new notes {new_user}')
+
         return {"id": new_user, "email": user_email}
     except:
         return{"message": "user already exist"}
 
+def insert_note(content_note,user_fk_note):
+    try:        
+        new_note = Notes.insert(content=content_note,user_fk=user_fk_note).execute()
+        print(new_note)
+        return{"message":"note added"}
+    except:
+        return{"message":"error"}
 
 
 @post('/addUser')
@@ -43,7 +66,7 @@ def add_user():
             "err": err.messages,
         }
 
-    
+
 @get('/users')
 def query_users():
     query = Users.select(Users.email, Users.password, Users.token)
@@ -68,12 +91,14 @@ def do_login():
             query = Users.select(Users.user_id,Users.email,Users.password,Users.token).where(Users.email==my_email)
             user_exist ={}
             for user in query:                
+                user_exist['user_id']= user.user_id
                 user_exist['email']= user.email
                 user_exist['password']= user.password
                 user_exist['token']= user.token
             
             if len(user_exist)>0 and check_password_hash(user_exist['password'],my_pass):
                 return{
+                    "user_id": user_exist['user_id'],
                     "email": my_email,
                     "token": user_exist['token']
                 }
@@ -92,10 +117,48 @@ def do_login():
         }
 
 
-@post('/notes')
+@post('/addNotes')
 def addNote():
-    new_note = {'name' : request.json.get('name'), 'password' : request.json.get('password')}
-    return {'ok': new_note}
+    email = request.json.get('email')
+    content = request.json.get('content')
+    token = request.json.get('token')
+    user_fk =request.json.get('user_fk')
+    
+    de_token = decode_token(token)
+    json_user = {
+        "email" : email
+    }
+    if json_user['email'] == de_token['email']:
+        
+        new_note = {'content' : content, 'user_fk' : user_fk}
+        
+        if new_note:
+            insert_note(content, user_fk)
+            return {'ok': content}
+        else:
+            return{"message":"error"}
+    
+
+@post('/myNotes')
+def query_users():
+    email = request.json.get('email')
+    token = request.json.get('token')
+    user_id =request.json.get('user_fk')
+    
+    de_token = decode_token(token)
+    json_user = {
+        "email" : email
+    }
+    if json_user['email'] == de_token['email']:        
+        query = Notes.select(Notes.content, Notes.user_fk).where(Notes.user_fk == user_id)
+        my_ls = []
+        for v in query:
+            my_ls.append(dict(content=v.content))
+        
+        print(my_ls)
+        notesDict = json.dumps(my_ls)
+        return notesDict
+
 
 
 run(host='localhost', port=8000, reloader=True)

@@ -23,11 +23,3 @@ class Notes(Model):
 def init():
     db.connect()
     db.create_tables([Users, Notes])
-
-
-# chamo = Profesores( nombre='Chamo',
-#                    apellido='Linares',
-#                    telefono='640568923',
-#                    email='alinares@paradigmadigital.com')
-# chamo.save()
-
