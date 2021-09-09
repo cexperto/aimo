@@ -6,6 +6,7 @@ class Users(Model):
    user_id = PrimaryKeyField(AutoField)
    email = CharField(unique=True)
    password = CharField()
+   token = CharField()
 
    class Meta:
        database = db
