@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Hey welcome to the aimo notes</h1>
+    <form id="form">
+        <h1>Login</h1><br>
+        <h3>email</h3>
+        <input type="email" name="email" id="email" placeholder="email">
+        <h3>password</h3>
+        <input type="password" name="password" id="password" placeholder="password">
+        <button type="button" id="btn">send</button>
+        <!-- <input type="submit" id="btn" value="send"> -->
+
+    </form>
+    <script>
+        
+        let btn_send = document.getElementById('btn')
+        const url = 'http://localhost:8000/login';
+        
+        function send_data(){
+            const email = document.getElementById('email').value
+            const password = document.getElementById('password').value
+            
+            let data ={
+                email,password
+            }
+            console.log(data);
+            fetch(url, {
+                method: 'POST', // or 'PUT'
+                body: JSON.stringify(data), // data can be `string` or {object}!
+                headers:{
+                    'Content-Type': 'application/json'
+                }
+                }).then(res => res.json())
+                .catch(error => console.error('Error:', error))
+                .then(response => console.log('Success:', response));
+            }
+
+        btn_send = document.addEventListener('click',send_data)
+       
+
+        
+
+
+    </script>
+</body>
+</html>

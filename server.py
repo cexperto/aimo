@@ -1,5 +1,4 @@
 from model import Users, init, Notes
-from hashlib import sha1
 from serializer import UserSchema, User, NotesSchema
 from bottle import debug, run, get, post, request, delete,route
 from marshmallow import ValidationError, exceptions
@@ -31,14 +30,12 @@ def insert_user(user_email, user_password):
         key = generate_password_hash(user_password, 'sha256')
         print(f'key : {str(key)}')
         my_token= encode_token(my_dict)
-
         new_user = Users.insert(email=user_email,password=key,token=my_token).execute()
-
         print(f'new notes {new_user}')
-
-        return {"id": new_user, "email": user_email}
+        return {"message":"ok", "id": new_user, "email": user_email}
     except:
         return{"message": "user already exist"}
+
 
 def insert_note(content_note,user_fk_note):
     try:        
@@ -57,7 +54,8 @@ def add_user():
         my_email = request.json.get('email')
         my_password = request.json.get('password')
         if result:  
-            insert_user(my_email,my_password)
+            insert = insert_user(my_email,my_password)
+            return insert
 
     except ValidationError as err:
         print(err.messages)
@@ -113,7 +111,7 @@ def do_login():
         print(err.messages)
         print(err.valid_data)
         return{
-            "err": "something happend, check the data"
+            "err": "something happend, check the data",
         }
 
 
@@ -129,12 +127,14 @@ def addNote():
         "email" : email
     }
     if json_user['email'] == de_token['email']:
-        
         new_note = {'content' : content, 'user_fk' : user_fk}
         
         if new_note:
-            insert_note(content, user_fk)
-            return {'ok': content}
+            insert = insert_note(content, user_fk)
+            if insert['message']== 'error':
+                return insert
+            else:
+                return {"message":"ok"}
         else:
             return{"message":"error"}
     
